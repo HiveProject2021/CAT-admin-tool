@@ -4,7 +4,7 @@ CAT Admin Tool
 Install
 -------
 
-**Ubuntu/MacOSs**
+**Ubuntu/macOS**
 ```
 git clone https://github.com/Chia-Network/CAT-admin-tool.git
 cd CAT-admin-tool
@@ -14,7 +14,7 @@ pip install .
 ```
 (If you're on an M1 Mac, make sure you are running an ARM64 native python virtual environment)
 
-**Windows Powershell**
+**Windows PowerShell**
 ```
 git clone https://github.com/Chia-Network/CAT-admin-tool.git
 cd CAT-admin-tool
