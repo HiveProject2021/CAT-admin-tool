@@ -7,43 +7,61 @@ import json
 from typing import Optional, Tuple, Iterable, Union, List
 from blspy import G2Element, AugSchemeMPL
 
-from chives.cmds.wallet_funcs import get_wallet
-from chives.rpc.wallet_rpc_client import WalletRpcClient
-from chives.util.default_root import DEFAULT_ROOT_PATH
-from chives.util.config import load_config
-from chives.util.ints import uint16
-from chives.util.byte_types import hexstr_to_bytes
-from chives.types.blockchain_format.program import Program
+from chia.cmds.wallet_funcs import get_wallet
+from chia.rpc.wallet_rpc_client import WalletRpcClient
+from chia.util.default_root import DEFAULT_ROOT_PATH
+from chia.util.config import load_config
+from chia.util.ints import uint16
+from chia.util.byte_types import hexstr_to_bytes
+from chia.types.blockchain_format.program import Program
 from clvm_tools.clvmc import compile_clvm_text
 from clvm_tools.binutils import assemble
-from chives.types.spend_bundle import SpendBundle
-from chives.wallet.cc_wallet.cc_utils import (
+from chia.types.spend_bundle import SpendBundle
+from chia.wallet.cc_wallet.cc_utils import (
     construct_cc_puzzle,
     CC_MOD,
     SpendableCC,
     unsigned_spend_bundle_for_spendable_ccs,
 )
-from chives.util.bech32m import decode_puzzle_hash
+from chia.util.bech32m import decode_puzzle_hash
 
-# Loading the client requires the standard chives root directory configuration that all of the chives commands rely on
+from chia.rpc.full_node_rpc_api import FullNodeRpcApi
+from chia.rpc.full_node_rpc_client import FullNodeRpcClient
+
+
+# Loading the client requires the standard chia root directory configuration that all of the chia commands rely on
 async def get_client() -> Optional[WalletRpcClient]:
     try:
         config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
         self_hostname = config["self_hostname"]
-        full_node_rpc_port = config["wallet"]["rpc_port"]
-        full_node_client = await WalletRpcClient.create(
-            self_hostname, uint16(full_node_rpc_port), DEFAULT_ROOT_PATH, config
+        wallet_rpc_port = config["wallet"]["rpc_port"]
+        wallet_client = await WalletRpcClient.create(
+            self_hostname, uint16(wallet_rpc_port), DEFAULT_ROOT_PATH, config
         )
-        return full_node_client
+        return wallet_client
     except Exception as e:
         if isinstance(e, aiohttp.ClientConnectorError):
             print(
-                f"Connection error. Check if full node is running at {full_node_rpc_port}"
+                f"Connection error. Check if full node is running at {wallet_rpc_port}"
             )
         else:
             print(f"Exception from 'harvester' {e}")
         return None
 
+async def  push_transaction(SpendBundle):  
+    try:
+        config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
+        self_hostname = config["self_hostname"]
+        full_node_rpc_port = config["full_node"]["rpc_port"]
+        full_node_client = await FullNodeRpcClient.create(self_hostname, uint16(full_node_rpc_port), DEFAULT_ROOT_PATH, config)
+        push_res = await full_node_client.push_tx(SpendBundle)
+        return push_res
+    except Exception as e:
+        print(f"Exception from 'push_transaction' {e}")
+        return None
+    finally:
+        full_node_client.close()
+        await full_node_client.await_closed()
 
 async def get_signed_tx(fingerprint, ph, amt, fee):
     try:
@@ -253,14 +271,17 @@ def cli(
             SpendBundle([], aggregated_signature),
         ]
     )
+    
+    push_transaction_result = asyncio.get_event_loop().run_until_complete(
+        push_transaction(final_bundle)
+    )
+    push_transaction_result['AssetID'] = curried_tail.get_tree_hash()
+    print(push_transaction_result) 
+    #if as_bytes:
+    #    final_bundle = bytes(final_bundle).hex()
+    #else:
+    #    final_bundle = json.dumps(final_bundle)
 
-    if as_bytes:
-        final_bundle = bytes(final_bundle).hex()
-    else:
-        final_bundle = json.dumps(final_bundle, sort_keys=True, indent=4)
-
-    print(f"Asset ID: {curried_tail.get_tree_hash()}")
-    print(f"Spend Bundle: {final_bundle}")
 
 def main():
     cli()
