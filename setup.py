@@ -21,7 +21,7 @@ setup(
     entry_points={
         "console_scripts": ["cats = cats.cats:main"],
     },
-    author_email="m.hauff@chia.net",
+    author_email="m.hauff@chives.net",
     setup_requires=["setuptools_scm"],
     install_requires=dependencies,
     url="https://github.com/Chia-Network",
