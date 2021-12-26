@@ -6,7 +6,7 @@ with open("README.md", "rt") as fh:
     long_description = fh.read()
 
 dependencies = [
-    "chives-blockchain@git+https://github.com/HiveProject2021/chives-light-wallet.git@main#6e226ab33b4ab0b17fd890f09ca920216fbeb631",
+    "chives-wallet@git+https://github.com/HiveProject2021/chives-light-wallet.git@main#6e226ab33b4ab0b17fd890f09ca920216fbeb631",
 ]
 
 dev_dependencies = [
